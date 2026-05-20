@@ -34,7 +34,7 @@ export const aiDayLimit = rateLimiter<AppEnv>({
 
 export const authLimit = rateLimiter({
   windowMs: 15 * 60_000,
-  limit: 10,
+  limit: process.env.E2E === '1' ? 10_000 : 10,
   standardHeaders: 'draft-7',
   keyGenerator: ipKey,
   handler: tooMany('Too many auth attempts. Try again in 15 minutes.'),
