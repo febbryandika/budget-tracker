@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core'
+import { pgTable, text, numeric, timestamp, boolean, index } from 'drizzle-orm/pg-core'
+import { createId } from '@paralleldrive/cuid2'
 
 // ── better-auth required tables ──────────────────────────────────────────────
 // Do NOT rename these tables or columns — better-auth expects this exact shape.
@@ -51,12 +52,28 @@ export const verification = pgTable('verification', {
 })
 
 // ── Your app tables go below ──────────────────────────────────────────────────
-// Example:
-// import { createId } from '@paralleldrive/cuid2'
-//
-// export const posts = pgTable('posts', {
-//   id:        text('id').primaryKey().$defaultFn(() => createId()),
-//   userId:    text('user_id').notNull().references(() => user.id),
-//   title:     text('title').notNull(),
-//   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-// })
+
+export const categories = pgTable('categories', {
+  id:        text('id').primaryKey().$defaultFn(() => createId()),
+  userId:    text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  name:      text('name').notNull(),
+  color:     text('color').notNull().default('#6366f1'),
+  isDefault: text('is_default').notNull().default('false'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index('idx_category_user').on(t.userId),
+])
+
+export const entries = pgTable('entries', {
+  id:         text('id').primaryKey().$defaultFn(() => createId()),
+  userId:     text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  categoryId: text('category_id').references(() => categories.id, { onDelete: 'restrict' }),
+  type:       text('type', { enum: ['income', 'expense'] }).notNull(),
+  amount:     numeric('amount', { precision: 12, scale: 2 }).notNull(),
+  date:       text('date').notNull(),
+  note:       text('note'),
+  createdAt:  timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index('idx_entry_user_date').on(t.userId, t.date),
+  index('idx_entry_category').on(t.categoryId),
+])

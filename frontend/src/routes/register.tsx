@@ -3,13 +3,14 @@ import { useState } from 'react'
 import { authClient } from '@/lib/auth-client'
 import { redirectIfAuthed } from '@/lib/require-auth'
 
-export const Route = createFileRoute('/login')({
+export const Route = createFileRoute('/register')({
   beforeLoad: redirectIfAuthed,
-  component: LoginPage,
+  component: RegisterPage,
 })
 
-function LoginPage() {
+function RegisterPage() {
   const router = useRouter()
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -20,11 +21,11 @@ function LoginPage() {
     setError('')
     setLoading(true)
 
-    const { error: signInError } = await authClient.signIn.email({ email, password })
+    const { error: signUpError } = await authClient.signUp.email({ email, password, name })
     setLoading(false)
 
-    if (signInError) {
-      setError(signInError.message ?? 'Unable to sign in')
+    if (signUpError) {
+      setError(signUpError.message ?? 'Unable to create account')
       return
     }
     router.navigate({ to: '/dashboard' })
@@ -34,16 +35,30 @@ function LoginPage() {
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="w-full max-w-sm space-y-6">
         <div className="space-y-1 text-center">
-          <h1 className="text-2xl font-bold">Sign in</h1>
+          <h1 className="text-2xl font-bold">Create account</h1>
           <p className="text-sm text-muted-foreground">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-primary underline underline-offset-2">
-              Sign up
+            Already have an account?{' '}
+            <Link to="/login" className="text-primary underline underline-offset-2">
+              Sign in
             </Link>
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <label htmlFor="name" className="text-sm font-medium">Name</label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              autoComplete="name"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="Your name"
+            />
+          </div>
+
           <div className="space-y-1">
             <label htmlFor="email" className="text-sm font-medium">Email</label>
             <input
@@ -66,9 +81,10 @@ function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              autoComplete="current-password"
+              minLength={8}
+              autoComplete="new-password"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="••••••••"
+              placeholder="At least 8 characters"
             />
           </div>
 
@@ -79,7 +95,7 @@ function LoginPage() {
             disabled={loading}
             className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
       </div>

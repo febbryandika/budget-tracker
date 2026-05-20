@@ -1,16 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { authClient } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/')({
-  component: HomePage,
+  beforeLoad: async () => {
+    const { data } = await authClient.getSession()
+    throw redirect({ to: data?.session ? '/dashboard' : '/login' })
+  },
 })
-
-function HomePage() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-      <h1 className="text-4xl font-bold tracking-tight">Welcome</h1>
-      <p className="text-muted-foreground text-lg">
-        Your project is ready. Start building.
-      </p>
-    </div>
-  )
-}

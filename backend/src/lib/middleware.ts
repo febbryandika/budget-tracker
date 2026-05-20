@@ -7,6 +7,7 @@ export type AppEnv = {
   Variables: {
     user: SessionData['user']
     session: SessionData['session']
+    requestId: string
   }
 }
 

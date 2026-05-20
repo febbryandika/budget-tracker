@@ -1,39 +1,51 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { logger } from 'hono/logger'
 import { auth } from './lib/auth'
+import { handleError } from './lib/errors'
+import { requestLogger } from './lib/logger'
+import { authLimit } from './lib/rate-limit'
 import { requireAuth, type AppEnv } from './lib/middleware'
+import categoriesRoutes from './routes/categories'
+import entriesRoutes from './routes/entries'
+import summaryRoutes from './routes/summary'
+import insightsRoutes from './routes/insights'
 
-const app = new Hono()
+const app = new Hono<AppEnv>()
 
-// Middleware
-app.use('*', logger())
+app.use('*', requestLogger)
 app.use(
   '*',
   cors({
     origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
     allowHeaders: ['Content-Type', 'Authorization'],
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    exposeHeaders: ['Content-Length'],
+    exposeHeaders: ['Content-Length', 'X-Request-Id'],
     maxAge: 600,
     credentials: true,
   })
 )
 
-// Auth routes — better-auth handles /api/auth/**
-app.on(['GET', 'POST'], '/api/auth/**', (c) => auth.handler(c.req.raw))
+app.onError(handleError)
 
 // Health check
 app.get('/api/health', (c) => c.json({ status: 'ok' }))
 
-// Protected routes example
-const api = new Hono<AppEnv>()
-api.use('*', requireAuth)
+// Auth routes — better-auth handles /api/auth/**. Rate-limit sign-in/up first.
+const authApp = new Hono()
+  .use('/sign-in/*', authLimit)
+  .use('/sign-up/*', authLimit)
+  .all('/*', (c) => auth.handler(c.req.raw))
 
-api.get('/me', (c) => {
-  const user = c.get('user')
-  return c.json({ user })
-})
+app.route('/api/auth', authApp)
+
+// Protected routes — chained registration so RPC types flow through
+const api = new Hono<AppEnv>()
+  .use('*', requireAuth)
+  .get('/me', (c) => c.json({ user: c.get('user') }))
+  .route('/categories', categoriesRoutes)
+  .route('/entries',    entriesRoutes)
+  .route('/summary',    summaryRoutes)
+  .route('/insights',   insightsRoutes)
 
 app.route('/api', api)
 

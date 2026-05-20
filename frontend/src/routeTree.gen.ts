@@ -9,12 +9,33 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EntriesIndexRouteImport } from './routes/entries/index'
+import { Route as EntriesNewRouteImport } from './routes/entries/new'
+import { Route as EntriesIdEditRouteImport } from './routes/entries/$id.edit'
 
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -22,40 +43,125 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EntriesIndexRoute = EntriesIndexRouteImport.update({
+  id: '/entries/',
+  path: '/entries/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntriesNewRoute = EntriesNewRouteImport.update({
+  id: '/entries/new',
+  path: '/entries/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntriesIdEditRoute = EntriesIdEditRouteImport.update({
+  id: '/entries/$id/edit',
+  path: '/entries/$id/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/categories': typeof CategoriesRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/entries/new': typeof EntriesNewRoute
+  '/entries/': typeof EntriesIndexRoute
+  '/entries/$id/edit': typeof EntriesIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/categories': typeof CategoriesRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/entries/new': typeof EntriesNewRoute
+  '/entries': typeof EntriesIndexRoute
+  '/entries/$id/edit': typeof EntriesIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/categories': typeof CategoriesRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/entries/new': typeof EntriesNewRoute
+  '/entries/': typeof EntriesIndexRoute
+  '/entries/$id/edit': typeof EntriesIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login'
+  fullPaths:
+    | '/'
+    | '/categories'
+    | '/dashboard'
+    | '/login'
+    | '/register'
+    | '/entries/new'
+    | '/entries/'
+    | '/entries/$id/edit'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login'
-  id: '__root__' | '/' | '/login'
+  to:
+    | '/'
+    | '/categories'
+    | '/dashboard'
+    | '/login'
+    | '/register'
+    | '/entries/new'
+    | '/entries'
+    | '/entries/$id/edit'
+  id:
+    | '__root__'
+    | '/'
+    | '/categories'
+    | '/dashboard'
+    | '/login'
+    | '/register'
+    | '/entries/new'
+    | '/entries/'
+    | '/entries/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CategoriesRoute: typeof CategoriesRoute
+  DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
+  EntriesNewRoute: typeof EntriesNewRoute
+  EntriesIndexRoute: typeof EntriesIndexRoute
+  EntriesIdEditRoute: typeof EntriesIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/categories': {
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -65,12 +171,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/entries/': {
+      id: '/entries/'
+      path: '/entries'
+      fullPath: '/entries/'
+      preLoaderRoute: typeof EntriesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entries/new': {
+      id: '/entries/new'
+      path: '/entries/new'
+      fullPath: '/entries/new'
+      preLoaderRoute: typeof EntriesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entries/$id/edit': {
+      id: '/entries/$id/edit'
+      path: '/entries/$id/edit'
+      fullPath: '/entries/$id/edit'
+      preLoaderRoute: typeof EntriesIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CategoriesRoute: CategoriesRoute,
+  DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
+  EntriesNewRoute: EntriesNewRoute,
+  EntriesIndexRoute: EntriesIndexRoute,
+  EntriesIdEditRoute: EntriesIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
