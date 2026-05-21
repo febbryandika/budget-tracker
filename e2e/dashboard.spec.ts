@@ -12,7 +12,7 @@ test.describe('Dashboard', () => {
     await expect(page.getByText('Total expenses', { exact: true })).toBeVisible()
     await expect(page.getByText('Net balance', { exact: true })).toBeVisible()
 
-    await expect(page.getByText('No data yet — add entries to see your trend.')).toBeVisible()
+    await expect(page.getByText('No data to chart yet')).toBeVisible()
     await expect(page.getByText('Add your first entry to see monthly insights.')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Get AI insights' })).toBeDisabled()
   })
@@ -47,7 +47,7 @@ test.describe('Dashboard', () => {
     expect(optionValues.length).toBeGreaterThan(2)
     await monthSelect.selectOption(optionValues[2])
 
-    await expect(page.getByText('No data yet — add entries to see your trend.')).toBeVisible()
+    await expect(page.getByText('No data to chart yet')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Get AI insights' })).toBeDisabled()
   })
 })
