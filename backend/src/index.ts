@@ -47,7 +47,7 @@ app.onError(handleError)
 app.get('/api/health', (c) => c.json({ status: 'ok' }))
 
 // Metrics snapshot — intended for ops scraping; gate at infra in production.
-app.get('/api/metrics', (c) => c.json(metricsSnapshot()))
+app.get('/api/metrics', async (c) => c.json(await metricsSnapshot()))
 
 // Auth routes — better-auth handles /api/auth/**. Rate-limit sign-in/up first.
 const authApp = new Hono()
