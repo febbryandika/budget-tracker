@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { useBlocker } from '@tanstack/react-router'
+import { registerDirty } from '@/lib/dirty-forms'
 
 const PROMPT = 'You have unsaved changes. Leave anyway?'
 
@@ -10,4 +12,6 @@ export function useUnsavedChanges(isDirty: boolean) {
     },
     enableBeforeUnload: () => isDirty,
   })
+
+  useEffect(() => registerDirty(() => isDirty), [isDirty])
 }

@@ -1,6 +1,10 @@
 import type { FallbackProps } from 'react-error-boundary'
 import { Link } from '@tanstack/react-router'
 
+function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback
+}
+
 export function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   return (
     <div
@@ -9,7 +13,7 @@ export function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
     >
       <div>
         <p className="font-semibold text-destructive">Something went wrong.</p>
-        <p className="mt-1 text-muted-foreground">{error.message ?? 'An unexpected error occurred.'}</p>
+        <p className="mt-1 text-muted-foreground">{errorMessage(error, 'An unexpected error occurred.')}</p>
       </div>
       <div className="flex items-center gap-3">
         <button
@@ -37,7 +41,7 @@ export function InlineErrorFallback({ error, resetErrorBoundary }: FallbackProps
       className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm"
     >
       <p className="font-medium text-destructive">This section failed to render.</p>
-      <p className="text-muted-foreground">{error.message ?? 'Unexpected error.'}</p>
+      <p className="text-muted-foreground">{errorMessage(error, 'Unexpected error.')}</p>
       <button
         type="button"
         onClick={resetErrorBoundary}

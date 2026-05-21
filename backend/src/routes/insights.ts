@@ -22,6 +22,8 @@ const insightsSchema = z.object({
 })
 
 const AI_TIMEOUT_MS = 10_000
+const PRIMARY_MODEL = process.env.OPENAI_MODEL ?? 'gpt-4.1-nano'
+const FALLBACK_MODEL = 'gpt-4.1-mini'
 
 const app = new Hono<AppEnv>()
   .get('/', aiMinuteLimit, aiDayLimit, zQuery(querySchema), async (c) => {
@@ -60,11 +62,10 @@ const app = new Hono<AppEnv>()
       })),
     }
 
-    const started = performance.now()
-    try {
-      const completion = await openai.chat.completions.parse(
+    const runCompletion = (model: string) =>
+      openai.chat.completions.parse(
         {
-          model: 'gpt-4.1-nano',
+          model,
           messages: [
             {
               role: 'system',
@@ -78,17 +79,36 @@ const app = new Hono<AppEnv>()
         { timeout: AI_TIMEOUT_MS },
       )
 
+    const started = performance.now()
+    let completion: Awaited<ReturnType<typeof runCompletion>> | undefined
+    let lastError: unknown
+    try {
+      completion = await runCompletion(PRIMARY_MODEL)
+    } catch (err) {
+      lastError = err
+      const is404 = err instanceof OpenAI.APIError && err.status === 404
+      if (is404 && PRIMARY_MODEL !== FALLBACK_MODEL) {
+        try {
+          completion = await runCompletion(FALLBACK_MODEL)
+          lastError = undefined
+        } catch (err2) {
+          lastError = err2
+        }
+      }
+    }
+
+    if (completion) {
       const parsed = completion.choices[0].message.parsed
       recordAiInsight('success', performance.now() - started)
       return c.json({ insights: parsed?.insights ?? [], month })
-    } catch (err) {
-      recordAiInsight('failure', performance.now() - started)
-      const requestId = c.get('requestId')
-      const message = err instanceof Error ? err.message : String(err)
-      console.error(JSON.stringify({ requestId, level: 'error', kind: 'ai_provider', message }))
-      captureException(err, { kind: 'ai_provider', requestId, userId: user.id })
-      return errorResponse(c, 502, 'AI_PROVIDER_ERROR', 'Unable to generate insights')
     }
+
+    recordAiInsight('failure', performance.now() - started)
+    const requestId = c.get('requestId')
+    const message = lastError instanceof Error ? lastError.message : String(lastError)
+    console.error(JSON.stringify({ requestId, level: 'error', kind: 'ai_provider', message }))
+    captureException(lastError, { kind: 'ai_provider', requestId, userId: user.id })
+    return errorResponse(c, 502, 'AI_PROVIDER_ERROR', 'Unable to generate insights')
   })
 
 export default app

@@ -1,6 +1,6 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { rateLimiter } from 'hono-rate-limiter'
-import type { Context, MiddlewareHandler, Next } from 'hono'
+import type { Context, MiddlewareHandler } from 'hono'
 import { redis } from './redis'
 import { captureException } from './sentry'
 import type { AppEnv } from './middleware'

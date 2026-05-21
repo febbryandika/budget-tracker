@@ -75,8 +75,10 @@ export function MonthChart({ data }: { data: TrendPoint[] }) {
                 className="text-muted-foreground"
               />
               <Tooltip
-                formatter={(v: number) => currency.format(v)}
-                labelFormatter={(label: string) => formatTick(label)}
+                formatter={(value) => currency.format(Number(value))}
+                labelFormatter={(label) =>
+                  typeof label === 'string' ? formatTick(label) : String(label)
+                }
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} />

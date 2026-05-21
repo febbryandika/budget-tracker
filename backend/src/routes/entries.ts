@@ -49,10 +49,9 @@ const app = new Hono<AppEnv>()
     const id = c.req.param('id')
     const body = c.req.valid('json')
 
-    const patch = {
-      ...body,
-      ...(body.amount !== undefined ? { amount: String(body.amount) } : {}),
-    }
+    const { amount, ...rest } = body
+    const patch =
+      amount !== undefined ? { ...rest, amount: String(amount) } : rest
 
     const [row] = await db
       .update(entries)

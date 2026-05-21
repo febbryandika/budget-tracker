@@ -4,12 +4,17 @@ const { parseMock } = vi.hoisted(() => ({ parseMock: vi.fn() }))
 
 vi.mock('../db', async () => ({ db: (await import('../test/db')).testDb }))
 vi.mock('../lib/auth', async () => ({ auth: (await import('../test/auth-mock')).authMock }))
-vi.mock('openai', () => ({
-  default: class {
+vi.mock('openai', async () => {
+  const actual = await vi.importActual<typeof import('openai')>('openai')
+  class MockOpenAI {
     chat = { completions: { parse: parseMock } }
-  },
-}))
+  }
+  // Preserve OpenAI.APIError so `err instanceof OpenAI.APIError` checks work in the route.
+  ;(MockOpenAI as unknown as { APIError: unknown }).APIError = actual.default.APIError
+  return { default: MockOpenAI }
+})
 
+import OpenAI from 'openai'
 import server from '../index'
 import { authedHeaders, createEntry, createUser, request } from '../test/helpers'
 
@@ -79,6 +84,62 @@ describe('GET /api/insights', () => {
     expect(res.body).toEqual({
       error: { code: 'AI_PROVIDER_ERROR', message: 'Unable to generate insights' },
     })
+  })
+
+  it('falls back to gpt-4.1-mini when the primary model returns 404', async () => {
+    const u = await createUser()
+    await createEntry({ userId: u.id, type: 'expense', amount: 50, date: '2026-05-10' })
+
+    const apiError = new OpenAI.APIError(
+      404,
+      { error: { message: 'model_not_found' } },
+      'not found',
+      new Headers(),
+    )
+    parseMock.mockRejectedValueOnce(apiError).mockResolvedValueOnce({
+      choices: [
+        {
+          message: {
+            parsed: {
+              insights: [
+                { title: 'A', body: 'a' },
+                { title: 'B', body: 'b' },
+                { title: 'C', body: 'c' },
+              ],
+            },
+          },
+        },
+      ],
+    })
+
+    const res = await request(server, '/api/insights?month=2026-05', {
+      headers: authedHeaders(u.id),
+    })
+
+    expect(res.status).toBe(200)
+    expect(parseMock).toHaveBeenCalledTimes(2)
+    expect(parseMock.mock.calls[0]![0].model).toBe('gpt-4.1-nano')
+    expect(parseMock.mock.calls[1]![0].model).toBe('gpt-4.1-mini')
+  })
+
+  it('does not retry on non-404 OpenAI errors', async () => {
+    const u = await createUser()
+    await createEntry({ userId: u.id, type: 'expense', amount: 50, date: '2026-05-10' })
+
+    const apiError = new OpenAI.APIError(
+      500,
+      { error: { message: 'server_error' } },
+      'server error',
+      new Headers(),
+    )
+    parseMock.mockRejectedValueOnce(apiError)
+
+    const res = await request(server, '/api/insights?month=2026-05', {
+      headers: authedHeaders(u.id),
+    })
+
+    expect(res.status).toBe(502)
+    expect(parseMock).toHaveBeenCalledTimes(1)
   })
 
   it('isolates insights data per user (does not see other users\' entries)', async () => {

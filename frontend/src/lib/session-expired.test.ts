@@ -12,6 +12,11 @@ vi.mock('./query-client', () => ({
   queryClient: { clear: () => queryClientClear() },
 }))
 
+const anyDirtyMock = vi.fn(() => false)
+vi.mock('./dirty-forms', () => ({
+  anyDirty: () => anyDirtyMock(),
+}))
+
 const originalLocation = window.location
 
 function stubLocation(pathname: string) {
@@ -28,6 +33,8 @@ describe('handleSessionExpired', () => {
     vi.resetModules()
     toastError.mockReset()
     queryClientClear.mockReset()
+    anyDirtyMock.mockReset()
+    anyDirtyMock.mockReturnValue(false)
   })
 
   afterEach(() => {
@@ -84,5 +91,45 @@ describe('handleSessionExpired', () => {
 
     expect(toastError).not.toHaveBeenCalled()
     expect(assign).not.toHaveBeenCalled()
+  })
+
+  it('prompts to confirm when a form is dirty and bails on cancel', async () => {
+    const assign = stubLocation('/entries/new')
+    anyDirtyMock.mockReturnValue(true)
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const mod = await import('./session-expired')
+
+    mod.handleSessionExpired()
+    await new Promise<void>((resolve) => queueMicrotask(resolve))
+
+    expect(confirmSpy).toHaveBeenCalledWith('You have unsaved changes. Continue to login?')
+    expect(toastError).not.toHaveBeenCalled()
+    expect(queryClientClear).not.toHaveBeenCalled()
+    expect(assign).not.toHaveBeenCalled()
+
+    // A later 401 with no dirty form should still trigger the flow.
+    anyDirtyMock.mockReturnValue(false)
+    mod.handleSessionExpired()
+    await new Promise<void>((resolve) => queueMicrotask(resolve))
+    expect(assign).toHaveBeenCalledWith('/login')
+
+    confirmSpy.mockRestore()
+  })
+
+  it('proceeds with redirect when user confirms the unsaved-changes prompt', async () => {
+    const assign = stubLocation('/entries/new')
+    anyDirtyMock.mockReturnValue(true)
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const mod = await import('./session-expired')
+
+    mod.handleSessionExpired()
+    await new Promise<void>((resolve) => queueMicrotask(resolve))
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(toastError).toHaveBeenCalledTimes(1)
+    expect(queryClientClear).toHaveBeenCalledTimes(1)
+    expect(assign).toHaveBeenCalledWith('/login')
+
+    confirmSpy.mockRestore()
   })
 })

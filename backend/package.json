@@ -6,8 +6,10 @@
     "dev": "bun run --watch src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "deploy": "wrangler deploy",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:prod": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },
@@ -15,7 +17,7 @@
     "@hono/zod-validator": "^0.4.1",
     "@neondatabase/serverless": "^0.10.4",
     "@paralleldrive/cuid2": "^2.2.2",
-    "@sentry/bun": "^10.53.1",
+    "@sentry/cloudflare": "^10.53.1",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
     "better-auth": "^1.2.7",
@@ -26,9 +28,11 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251101.0",
     "@electric-sql/pglite": "^0.4.5",
     "@types/bun": "latest",
     "drizzle-kit": "^0.30.4",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.7",
+    "wrangler": "^4.0.0"
   }
 }

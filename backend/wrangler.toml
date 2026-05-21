@@ -1,0 +1,14 @@
+name = "budget-tracker-api"
+main = "src/index.ts"
+compatibility_date = "2025-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Public, non-secret config. Override per-environment in [env.<name>.vars].
+# Secrets — DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, OPENAI_API_KEY,
+# SENTRY_DSN, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN — must be set via
+# `wrangler secret put <NAME>`. Do not commit them here.
+
+[vars]
+NODE_ENV     = "production"
+FRONTEND_URL = "https://REPLACE_WITH_PAGES_DOMAIN"
+OPENAI_MODEL = "gpt-4.1-nano"

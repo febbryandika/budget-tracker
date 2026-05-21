@@ -1,13 +1,13 @@
-import * as Sentry from '@sentry/bun'
+import * as Sentry from '@sentry/cloudflare'
 
-export function initSentry() {
+export function sentryOptions(): Sentry.CloudflareOptions {
   const dsn = process.env.SENTRY_DSN
-  if (!dsn) return
-  Sentry.init({
+  if (!dsn) return { dsn: undefined as unknown as string }
+  return {
     dsn,
-    environment: process.env.NODE_ENV ?? 'development',
+    environment: process.env.NODE_ENV ?? 'production',
     tracesSampleRate: 0,
-  })
+  }
 }
 
 export function captureException(
