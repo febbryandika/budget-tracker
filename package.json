@@ -6,6 +6,11 @@
     "dev": "bun run --concurrent dev:backend dev:frontend",
     "dev:backend": "cd backend && bun run dev",
     "dev:frontend": "cd frontend && bun run dev",
+    "test": "bun run test:backend && bun run test:frontend",
+    "test:backend": "cd backend && bun run test",
+    "test:frontend": "cd frontend && bun run test",
+    "typecheck": "cd frontend && bun run typecheck",
+    "build": "cd frontend && bun run build",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install chromium"
