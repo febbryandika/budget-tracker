@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
 import { cn } from '@/lib/utils'
 
 export type EntryFormInitialValues = {
@@ -46,6 +47,9 @@ export function EntryForm({
   const [date, setDate] = useState(initialValues?.date ?? todayISO())
   const [note, setNote] = useState(initialValues?.note ?? '')
   const [localError, setLocalError] = useState<string | null>(null)
+  const [dirty, setDirty] = useState(false)
+
+  useUnsavedChanges(dirty && !submitting)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -58,13 +62,25 @@ export function EntryForm({
     }
 
     const trimmedNote = note.trim()
-    await onSubmit({
-      amount: amountNum,
-      type,
-      categoryId: categoryId === '' ? undefined : categoryId,
-      date,
-      note: trimmedNote === '' ? undefined : trimmedNote,
-    })
+    // Clear dirty before awaiting submit so the post-submit navigation by the
+    // parent isn't blocked by the unsaved-changes prompt.
+    setDirty(false)
+    try {
+      await onSubmit({
+        amount: amountNum,
+        type,
+        categoryId: categoryId === '' ? undefined : categoryId,
+        date,
+        note: trimmedNote === '' ? undefined : trimmedNote,
+      })
+    } catch (err) {
+      setDirty(true)
+      throw err
+    }
+  }
+
+  function markDirty() {
+    if (!dirty) setDirty(true)
   }
 
   const inputClass =
@@ -77,7 +93,10 @@ export function EntryForm({
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={() => setType('expense')}
+            onClick={() => {
+              setType('expense')
+              markDirty()
+            }}
             className={cn(
               'rounded-md border px-3 py-2 text-sm font-medium transition',
               type === 'expense'
@@ -89,7 +108,10 @@ export function EntryForm({
           </button>
           <button
             type="button"
-            onClick={() => setType('income')}
+            onClick={() => {
+              setType('income')
+              markDirty()
+            }}
             className={cn(
               'rounded-md border px-3 py-2 text-sm font-medium transition',
               type === 'income'
@@ -112,7 +134,10 @@ export function EntryForm({
           min="0.01"
           required
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => {
+            setAmount(e.target.value)
+            markDirty()
+          }}
           className={inputClass}
           placeholder="0.00"
         />
@@ -123,7 +148,10 @@ export function EntryForm({
         <select
           id="category"
           value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
+          onChange={(e) => {
+            setCategoryId(e.target.value)
+            markDirty()
+          }}
           className={inputClass}
         >
           <option value="">No category</option>
@@ -142,7 +170,10 @@ export function EntryForm({
           type="date"
           required
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={(e) => {
+            setDate(e.target.value)
+            markDirty()
+          }}
           className={inputClass}
         />
       </div>
@@ -155,7 +186,10 @@ export function EntryForm({
           id="note"
           rows={2}
           value={note}
-          onChange={(e) => setNote(e.target.value)}
+          onChange={(e) => {
+            setNote(e.target.value)
+            markDirty()
+          }}
           className={inputClass}
           placeholder="Add a short description"
         />

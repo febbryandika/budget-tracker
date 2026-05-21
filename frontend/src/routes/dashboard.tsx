@@ -1,13 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 import { InlineErrorFallback } from '@/components/error-fallback'
 import { InsightsPanel } from '@/components/insights-panel'
-import { MonthChart } from '@/components/month-chart'
 import { MonthPicker } from '@/components/month-picker'
 import { SummaryCards } from '@/components/summary-cards'
 import { useSummary } from '@/hooks/use-summary'
 import { requireAuth } from '@/lib/require-auth'
+import { captureException } from '@/lib/sentry'
+
+const MonthChart = lazy(() =>
+  import('@/components/month-chart').then((m) => ({ default: m.MonthChart })),
+)
 
 export const Route = createFileRoute('/dashboard')({
   beforeLoad: requireAuth,
@@ -59,10 +63,26 @@ function DashboardPage() {
             net={net}
             loading={isLoading}
           />
-          <ErrorBoundary FallbackComponent={InlineErrorFallback}>
-            <MonthChart data={trend} />
+          <ErrorBoundary
+            FallbackComponent={InlineErrorFallback}
+            onError={(err, info) =>
+              captureException(err, { section: 'chart', componentStack: info.componentStack })
+            }
+          >
+            <Suspense
+              fallback={
+                <div className="h-72 animate-pulse rounded-lg border bg-card shadow-sm" />
+              }
+            >
+              <MonthChart data={trend} />
+            </Suspense>
           </ErrorBoundary>
-          <ErrorBoundary FallbackComponent={InlineErrorFallback}>
+          <ErrorBoundary
+            FallbackComponent={InlineErrorFallback}
+            onError={(err, info) =>
+              captureException(err, { section: 'insights', componentStack: info.componentStack })
+            }
+          >
             <InsightsPanel month={month} disabled={!hasEntries} />
           </ErrorBoundary>
           {!isLoading && !hasEntries && (

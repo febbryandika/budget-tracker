@@ -22,9 +22,19 @@ function EntriesPage() {
   const [month, setMonth] = useState(currentMonth)
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined)
 
-  const { data: entries, isLoading, isError, refetch } = useEntries(month, categoryId)
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useEntries(month, categoryId)
   const { data: categories } = useCategories()
   const deleteMutation = useDeleteEntry()
+
+  const entries = useMemo(() => data?.pages.flat() ?? [], [data])
 
   const categoryMap = useMemo(() => {
     const m = new Map<string, { name: string; color: string }>()
@@ -43,7 +53,7 @@ function EntriesPage() {
   }
 
   const deletingId = deleteMutation.isPending ? deleteMutation.variables?.id ?? null : null
-  const isEmpty = !isLoading && !isError && (entries?.length ?? 0) === 0
+  const isEmpty = !isLoading && !isError && entries.length === 0
 
   return (
     <div className="space-y-6">
@@ -101,12 +111,26 @@ function EntriesPage() {
           </Link>
         </div>
       ) : (
-        <EntryTable
-          entries={entries ?? []}
-          categoryMap={categoryMap}
-          onDelete={handleDelete}
-          deletingId={deletingId}
-        />
+        <>
+          <EntryTable
+            entries={entries}
+            categoryMap={categoryMap}
+            onDelete={handleDelete}
+            deletingId={deletingId}
+          />
+          {hasNextPage && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                {isFetchingNextPage ? 'Loading…' : 'Load more'}
+              </button>
+            </div>
+          )}
+        </>
       )}
 
     </div>

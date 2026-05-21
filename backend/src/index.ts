@@ -1,8 +1,13 @@
+import { initSentry } from './lib/sentry'
+initSentry()
+
 import { Hono } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { auth } from './lib/auth'
 import { handleError } from './lib/errors'
 import { requestLogger } from './lib/logger'
+import { snapshot as metricsSnapshot } from './lib/metrics'
 import { authLimit } from './lib/rate-limit'
 import { requireAuth, type AppEnv } from './lib/middleware'
 import categoriesRoutes from './routes/categories'
@@ -25,10 +30,24 @@ app.use(
   })
 )
 
+// Reject payloads larger than 100 KB on /api/*. Entry/category bodies are well
+// under 1 KB; this is purely a defensive cap.
+app.use(
+  '/api/*',
+  bodyLimit({
+    maxSize: 100 * 1024,
+    onError: (c) =>
+      c.json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request body too large' } }, 413),
+  }),
+)
+
 app.onError(handleError)
 
 // Health check
 app.get('/api/health', (c) => c.json({ status: 'ok' }))
+
+// Metrics snapshot — intended for ops scraping; gate at infra in production.
+app.get('/api/metrics', (c) => c.json(metricsSnapshot()))
 
 // Auth routes — better-auth handles /api/auth/**. Rate-limit sign-in/up first.
 const authApp = new Hono()

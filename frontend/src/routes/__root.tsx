@@ -4,6 +4,7 @@ import { ErrorBoundary } from 'react-error-boundary'
 import { Toaster } from 'sonner'
 import { ErrorFallback } from '@/components/error-fallback'
 import { authClient, useSession } from '@/lib/auth-client'
+import { captureException } from '@/lib/sentry'
 
 interface RouterContext {
   queryClient: QueryClient
@@ -82,6 +83,9 @@ function RootLayout() {
         <ErrorBoundary
           FallbackComponent={ErrorFallback}
           onReset={() => queryClient.clear()}
+          onError={(err, info) =>
+            captureException(err, { componentStack: info.componentStack })
+          }
         >
           <Outlet />
         </ErrorBoundary>

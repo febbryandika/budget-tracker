@@ -12,6 +12,13 @@ describe('GET /api/entries', () => {
     expect(res.status).toBe(401)
   })
 
+  it('returns the structured error envelope on 401', async () => {
+    const res = await request(server, '/api/entries')
+    expect(res.body).toEqual({
+      error: { code: 'UNAUTHORIZED', message: 'Unauthorized' },
+    })
+  })
+
   it('returns only the current user\'s entries', async () => {
     const a = await createUser()
     const b = await createUser()
@@ -86,6 +93,21 @@ describe('POST /api/entries', () => {
       body: JSON.stringify({ amount: 0, type: 'expense', date: '2026-05-20' }),
     })
     expect(res.status).toBe(400)
+  })
+
+  it('returns the structured error envelope on validation failure', async () => {
+    const u = await createUser()
+    const res = await request(server, '/api/entries', {
+      method: 'POST',
+      headers: authedHeaders(u.id),
+      body: JSON.stringify({ amount: -5, type: 'expense', date: 'nope' }),
+    })
+    expect(res.status).toBe(400)
+    const body = res.body as { error?: { code?: string; message?: string; issues?: unknown[] } }
+    expect(body.error?.code).toBe('VALIDATION_ERROR')
+    expect(body.error?.message).toMatch(/invalid request payload/i)
+    expect(Array.isArray(body.error?.issues)).toBe(true)
+    expect((body.error?.issues ?? []).length).toBeGreaterThan(0)
   })
 
   it('rejects malformed date with 400', async () => {

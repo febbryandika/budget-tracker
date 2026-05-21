@@ -24,6 +24,31 @@ const currency = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 0,
 })
 
+function ChartEmptyState() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+      <svg
+        viewBox="0 0 160 80"
+        role="img"
+        aria-label="Empty chart illustration"
+        className="h-20 w-40 text-muted-foreground/40"
+      >
+        <line x1="8" y1="72" x2="152" y2="72" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="8" y1="8" x2="8" y2="72" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="24"  y="56" width="14" height="14" rx="2" fill="currentColor" opacity="0.4" />
+        <rect x="48"  y="46" width="14" height="24" rx="2" fill="currentColor" opacity="0.55" />
+        <rect x="72"  y="38" width="14" height="32" rx="2" fill="currentColor" opacity="0.7" />
+        <rect x="96"  y="50" width="14" height="20" rx="2" fill="currentColor" opacity="0.55" />
+        <rect x="120" y="32" width="14" height="38" rx="2" fill="currentColor" opacity="0.85" />
+      </svg>
+      <p className="text-sm font-medium text-muted-foreground">No data to chart yet</p>
+      <p className="text-xs text-muted-foreground/80">
+        Add an income or expense entry to start building your trend.
+      </p>
+    </div>
+  )
+}
+
 export function MonthChart({ data }: { data: TrendPoint[] }) {
   const hasData = data.some((d) => d.income !== 0 || d.expense !== 0)
 
@@ -60,9 +85,7 @@ export function MonthChart({ data }: { data: TrendPoint[] }) {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            No data yet — add entries to see your trend.
-          </div>
+          <ChartEmptyState />
         )}
       </div>
     </div>

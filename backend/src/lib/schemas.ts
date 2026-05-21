@@ -13,6 +13,8 @@ export const entryUpdateSchema = entryCreateSchema.partial()
 export const entryListSchema = z.object({
   month:      z.string().regex(/^\d{4}-\d{2}$/).optional(),
   categoryId: z.string().optional(),
+  limit:      z.coerce.number().int().min(1).max(500).optional(),
+  offset:     z.coerce.number().int().min(0).optional(),
 })
 
 export const categoryCreateSchema = z.object({

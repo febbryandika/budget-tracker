@@ -1,14 +1,17 @@
 import { Hono } from 'hono'
-import { zValidator } from '@hono/zod-validator'
 import { and, eq, like } from 'drizzle-orm'
 import OpenAI from 'openai'
 import { zodResponseFormat } from 'openai/helpers/zod'
 import { z } from 'zod'
 import { db } from '../db'
 import { categories, entries } from '../db/schema'
+import { errorResponse } from '../lib/errors'
 import type { AppEnv } from '../lib/middleware'
+import { recordAiInsight } from '../lib/metrics'
 import { aiDayLimit, aiMinuteLimit } from '../lib/rate-limit'
 import { monthQuerySchema as querySchema } from '../lib/schemas'
+import { captureException } from '../lib/sentry'
+import { zQuery } from '../lib/validator'
 
 const openai = new OpenAI()
 
@@ -21,7 +24,7 @@ const insightsSchema = z.object({
 const AI_TIMEOUT_MS = 10_000
 
 const app = new Hono<AppEnv>()
-  .get('/', aiMinuteLimit, aiDayLimit, zValidator('query', querySchema), async (c) => {
+  .get('/', aiMinuteLimit, aiDayLimit, zQuery(querySchema), async (c) => {
     const user = c.get('user')
     const month = c.req.valid('query').month ?? new Date().toISOString().slice(0, 7)
 
@@ -57,6 +60,7 @@ const app = new Hono<AppEnv>()
       })),
     }
 
+    const started = performance.now()
     try {
       const completion = await openai.chat.completions.parse(
         {
@@ -75,13 +79,15 @@ const app = new Hono<AppEnv>()
       )
 
       const parsed = completion.choices[0].message.parsed
+      recordAiInsight('success', performance.now() - started)
       return c.json({ insights: parsed?.insights ?? [], month })
     } catch (err) {
-      console.error('AI insights failed:', err)
-      return c.json(
-        { error: { code: 'AI_PROVIDER_ERROR', message: 'Unable to generate insights' } },
-        502,
-      )
+      recordAiInsight('failure', performance.now() - started)
+      const requestId = c.get('requestId')
+      const message = err instanceof Error ? err.message : String(err)
+      console.error(JSON.stringify({ requestId, level: 'error', kind: 'ai_provider', message }))
+      captureException(err, { kind: 'ai_provider', requestId, userId: user.id })
+      return errorResponse(c, 502, 'AI_PROVIDER_ERROR', 'Unable to generate insights')
     }
   })
 

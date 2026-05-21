@@ -1,5 +1,18 @@
 import type { Context } from 'hono'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
+import { recordApiError } from './metrics'
+import { captureException } from './sentry'
 import type { AppEnv } from './middleware'
+
+export function errorResponse(
+  c: Context,
+  status: ContentfulStatusCode,
+  code: string,
+  message: string,
+  extras?: Record<string, unknown>,
+) {
+  return c.json({ error: { code, message, ...extras } }, status)
+}
 
 const PG_CONNECTION_CODES = new Set([
   '08000', '08001', '08003', '08004', '08006', '08007', '08P01',
@@ -23,16 +36,14 @@ export function handleError(err: Error, c: Context<AppEnv>) {
   const requestId = c.get('requestId')
 
   if (isConnectionError(err)) {
+    recordApiError(503)
     console.error(JSON.stringify({ requestId, level: 'error', kind: 'db_connection', message: err.message }))
-    return c.json(
-      { error: { code: 'DB_UNAVAILABLE', message: 'Service temporarily unavailable', requestId } },
-      503,
-    )
+    captureException(err, { kind: 'db_connection', requestId })
+    return errorResponse(c, 503, 'DB_UNAVAILABLE', 'Service temporarily unavailable', { requestId })
   }
 
+  recordApiError(500)
   console.error(JSON.stringify({ requestId, level: 'error', kind: 'internal', message: err.message, stack: err.stack }))
-  return c.json(
-    { error: { code: 'INTERNAL_ERROR', message: 'Internal server error', requestId } },
-    500,
-  )
+  captureException(err, { kind: 'internal', requestId, route: c.req.path })
+  return errorResponse(c, 500, 'INTERNAL_ERROR', 'Internal server error', { requestId })
 }

@@ -1,10 +1,11 @@
 import { Hono } from 'hono'
-import { zValidator } from '@hono/zod-validator'
 import { and, count, eq } from 'drizzle-orm'
 import { db } from '../db'
 import { categories, entries } from '../db/schema'
+import { errorResponse } from '../lib/errors'
 import type { AppEnv } from '../lib/middleware'
 import { categoryCreateSchema as createSchema, categoryUpdateSchema as updateSchema } from '../lib/schemas'
+import { zJson } from '../lib/validator'
 
 const DEFAULT_CATEGORIES = [
   { name: 'Food',          color: '#ef4444' },
@@ -31,7 +32,7 @@ const app = new Hono<AppEnv>()
       .returning()
     return c.json(seeded)
   })
-  .post('/', zValidator('json', createSchema), async (c) => {
+  .post('/', zJson(createSchema), async (c) => {
     const user = c.get('user')
     const body = c.req.valid('json')
     const [row] = await db
@@ -40,7 +41,7 @@ const app = new Hono<AppEnv>()
       .returning()
     return c.json(row, 201)
   })
-  .put('/:id', zValidator('json', updateSchema), async (c) => {
+  .put('/:id', zJson(updateSchema), async (c) => {
     const user = c.get('user')
     const id = c.req.param('id')
     const body = c.req.valid('json')
@@ -49,7 +50,7 @@ const app = new Hono<AppEnv>()
       .set(body)
       .where(and(eq(categories.id, id), eq(categories.userId, user.id)))
       .returning()
-    if (!row) return c.json({ error: 'Not found' }, 404)
+    if (!row) return errorResponse(c, 404, 'NOT_FOUND', 'Category not found')
     return c.json(row)
   })
   .delete('/:id', async (c) => {
@@ -62,17 +63,14 @@ const app = new Hono<AppEnv>()
       .where(and(eq(entries.categoryId, id), eq(entries.userId, user.id)))
 
     if (refCount > 0) {
-      return c.json(
-        { error: { code: 'CATEGORY_IN_USE', message: 'Cannot delete category with entries' } },
-        409,
-      )
+      return errorResponse(c, 409, 'CATEGORY_IN_USE', 'Cannot delete category with entries')
     }
 
     const [row] = await db
       .delete(categories)
       .where(and(eq(categories.id, id), eq(categories.userId, user.id)))
       .returning()
-    if (!row) return c.json({ error: 'Not found' }, 404)
+    if (!row) return errorResponse(c, 404, 'NOT_FOUND', 'Category not found')
     return c.json({ success: true })
   })
 
