@@ -82,17 +82,6 @@ describe('handleSessionExpired', () => {
     expect(assign).not.toHaveBeenCalled()
   })
 
-  it('no-ops when already on /register', async () => {
-    const assign = stubLocation('/register')
-    const mod = await import('./session-expired')
-
-    mod.handleSessionExpired()
-    await new Promise<void>((resolve) => queueMicrotask(resolve))
-
-    expect(toastError).not.toHaveBeenCalled()
-    expect(assign).not.toHaveBeenCalled()
-  })
-
   it('prompts to confirm when a form is dirty and bails on cancel', async () => {
     const assign = stubLocation('/entries/new')
     anyDirtyMock.mockReturnValue(true)

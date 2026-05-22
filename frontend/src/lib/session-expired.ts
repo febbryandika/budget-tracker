@@ -7,7 +7,7 @@ let fired = false
 export function handleSessionExpired() {
   if (fired) return
   const path = window.location.pathname
-  if (path.startsWith('/login') || path.startsWith('/register')) return
+  if (path.startsWith('/login')) return
 
   if (anyDirty() && !window.confirm('You have unsaved changes. Continue to login?')) {
     // User chose to stay — preserve form values and allow a later 401 to retrigger.

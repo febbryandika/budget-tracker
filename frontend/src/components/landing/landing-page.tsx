@@ -50,9 +50,8 @@ function LandingNav() {
           ))}
         </nav>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Link to="/login" className="btn btn-ghost btn-sm">Sign in</Link>
-          <Link to="/register" className="btn btn-primary btn-sm">
-            Get started
+          <Link to="/login" className="btn btn-primary btn-sm">
+            Sign in
             <ArrowRight size={14} />
           </Link>
         </div>
@@ -88,12 +87,9 @@ function Hero() {
             real charts, and let Claude tell you what's actually eating your budget.
           </p>
           <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
-            <Link to="/register" className="btn btn-primary btn-lg">
-              Start free — no card
+            <Link to="/login" className="btn btn-primary btn-lg">
+              Sign in
               <ArrowRight size={16} />
-            </Link>
-            <Link to="/login" className="btn btn-outline btn-lg">
-              I already have an account
             </Link>
           </div>
           <div style={{ display: 'flex', gap: 20, fontSize: 13, color: 'var(--fg-muted)', flexWrap: 'wrap' }}>
@@ -279,8 +275,8 @@ function HowItWorks() {
 
 function PricingSection() {
   const plans = [
-    { name: 'Free', price: 'Rp 0',   period: '/forever', features: ['Unlimited entries', 'Up to 6 custom categories', '3 AI insights / month', '6-month trend chart'],                              cta: 'Get started',         highlight: false },
-    { name: 'Plus', price: 'Rp 39k', period: '/month',   features: ['Everything in Free', 'Unlimited categories', 'Unlimited AI insights', 'CSV / JSON export', 'Priority support'], cta: 'Start 14-day trial', highlight: true },
+    { name: 'Free', price: 'Rp 0',   period: '/forever', features: ['Unlimited entries', 'Up to 6 custom categories', '3 AI insights / month', '6-month trend chart'],                              cta: 'Sign in', highlight: false },
+    { name: 'Plus', price: 'Rp 39k', period: '/month',   features: ['Everything in Free', 'Unlimited categories', 'Unlimited AI insights', 'CSV / JSON export', 'Priority support'], cta: 'Sign in', highlight: true },
   ]
   return (
     <section id="pricing" style={{ padding: '60px 0', borderTop: '1px solid var(--border)' }}>
@@ -316,7 +312,7 @@ function PricingSection() {
                 ))}
               </ul>
               <Link
-                to="/register"
+                to="/login"
                 className={p.highlight ? 'btn btn-primary' : 'btn btn-outline'}
                 style={{ width: '100%' }}
               >
@@ -400,8 +396,8 @@ function FinalCTA() {
           <p style={{ fontSize: 16, opacity: 0.85, maxWidth: 480, margin: '0 auto 24px' }}>
             Five seconds to make an account. Two minutes to feel in control.
           </p>
-          <Link to="/register" className="btn btn-lg" style={{ background: 'var(--bg-card)', color: 'var(--fg)' }}>
-            Create your free account
+          <Link to="/login" className="btn btn-lg" style={{ background: 'var(--bg-card)', color: 'var(--fg)' }}>
+            Sign in
             <ArrowRight size={16} />
           </Link>
         </div>

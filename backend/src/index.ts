@@ -8,6 +8,7 @@ import { requestLogger } from './lib/logger'
 import { snapshot as metricsSnapshot } from './lib/metrics'
 import { authLimit } from './lib/rate-limit'
 import { requireAuth, type AppEnv } from './lib/middleware'
+import adminRoutes from './routes/admin'
 import categoriesRoutes from './routes/categories'
 import entriesRoutes from './routes/entries'
 import summaryRoutes from './routes/summary'
@@ -28,6 +29,7 @@ const api = new Hono<AppEnv>()
   .route('/entries',    entriesRoutes)
   .route('/summary',    summaryRoutes)
   .route('/insights',   insightsRoutes)
+  .route('/admin',      adminRoutes)
 
 // Chain everything on the same builder so the RPC type carries every route.
 // Splitting via `app.use(...)` / `app.route(...)` statements drops the chain

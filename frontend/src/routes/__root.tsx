@@ -15,7 +15,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
 })
 
-const PUBLIC_ROUTES = ['/', '/login', '/register']
+const PUBLIC_ROUTES = ['/', '/login']
 
 function RootLayout() {
   const router = useRouter()
@@ -40,6 +40,7 @@ function RootLayout() {
         <TopNav
           userName={session?.user.name ?? ''}
           userEmail={session?.user.email ?? ''}
+          userRole={session?.user.role ?? null}
           onSignOut={handleSignOut}
         />
       )}

@@ -11,7 +11,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:prod": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "bootstrap:admin": "bun --env-file=.env run scripts/bootstrap-admin.ts"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.4.1",

@@ -21,3 +21,11 @@ export async function requireAuth(c: Context<AppEnv>, next: Next) {
   c.set('session', session.session)
   await next()
 }
+
+export async function requireAdmin(c: Context<AppEnv>, next: Next) {
+  const user = c.get('user')
+  if (user?.role !== 'admin') {
+    return errorResponse(c, 403, 'FORBIDDEN', 'Admin only')
+  }
+  await next()
+}

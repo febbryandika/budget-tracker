@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
-  Bell, ChevronDown, Download, Home, List, LogOut, Moon, Settings, Sun, Tag, User,
+  Bell, ChevronDown, Download, Home, List, LogOut, Moon, Settings, ShieldCheck, Sun, Tag, User,
   type LucideProps,
 } from 'lucide-react'
 import { BrandMark } from '@/components/ui/brand-mark'
@@ -10,6 +10,7 @@ import { useTheme } from '@/lib/theme'
 type Props = {
   userName: string
   userEmail: string
+  userRole?: string | null
   onSignOut: () => void
 }
 
@@ -17,16 +18,18 @@ type NavItem = {
   id: string
   label: string
   Icon: ComponentType<LucideProps>
-  to: '/dashboard' | '/entries' | '/categories'
+  to: '/dashboard' | '/entries' | '/categories' | '/admin'
 }
 
-const NAV_ITEMS: NavItem[] = [
+const BASE_NAV_ITEMS: NavItem[] = [
   { id: 'dashboard',  label: 'Dashboard',  Icon: Home, to: '/dashboard' },
   { id: 'entries',    label: 'Entries',    Icon: List, to: '/entries' },
   { id: 'categories', label: 'Categories', Icon: Tag,  to: '/categories' },
 ]
 
-export function TopNav({ userName, userEmail, onSignOut }: Props) {
+const ADMIN_NAV_ITEM: NavItem = { id: 'admin', label: 'Admin', Icon: ShieldCheck, to: '/admin' }
+
+export function TopNav({ userName, userEmail, userRole, onSignOut }: Props) {
   const { theme, toggleTheme } = useTheme()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
@@ -43,6 +46,10 @@ export function TopNav({ userName, userEmail, onSignOut }: Props) {
   }, [])
 
   const initial = (userName || userEmail || 'U').charAt(0).toUpperCase()
+  const navItems = useMemo(
+    () => (userRole === 'admin' ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM] : BASE_NAV_ITEMS),
+    [userRole],
+  )
 
   return (
     <header className="topnav">
@@ -52,7 +59,7 @@ export function TopNav({ userName, userEmail, onSignOut }: Props) {
           <span className="brand-wordmark hide-sm">Saku</span>
         </Link>
         <nav style={{ display: 'flex', gap: 4, marginLeft: 12 }}>
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <Link
               key={item.id}
               to={item.to}

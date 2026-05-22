@@ -127,13 +127,6 @@ function LoginPage() {
           )}
         </button>
       </form>
-
-      <p style={{ marginTop: 24, fontSize: 14, color: 'var(--fg-muted)', textAlign: 'center' }}>
-        Don't have an account?{' '}
-        <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 600 }}>
-          Create one
-        </Link>
-      </p>
     </AuthShell>
   )
 }
