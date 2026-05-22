@@ -76,7 +76,7 @@ const app = new Hono<AppEnv>()
             {
               role: 'system',
               content:
-                'You are a personal finance assistant. Given a monthly budget summary, return exactly 3 short, specific insights (1–2 sentences each). Be concrete — reference actual numbers and categories.',
+                'You are a personal finance assistant. All amounts are in Indonesian Rupiah (IDR). When referencing money, format as "Rp" followed by the number with dot thousand separators and no decimals (e.g. Rp1.500.000). Never use $, USD, or any other currency. Given a monthly budget summary, return exactly 3 short, specific insights (1–2 sentences each). Be concrete — reference actual numbers and categories.',
             },
             { role: 'user', content: JSON.stringify(summary) },
           ],

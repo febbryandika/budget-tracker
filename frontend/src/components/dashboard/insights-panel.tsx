@@ -144,7 +144,7 @@ function ShownState({ month, insights, onRegenerate }: { month: string; insights
           </div>
           <div>
             <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 2 }}>AI spending insights</h3>
-            <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>For {month} · powered by Claude</p>
+            <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>For {month} · powered by OpenAI</p>
           </div>
         </div>
         <button type="button" className="btn btn-outline btn-sm" onClick={onRegenerate}>
