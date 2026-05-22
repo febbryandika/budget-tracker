@@ -1,4 +1,4 @@
-name = "budget-tracker-api"
+name = "budget-tracker"
 main = "src/index.ts"
 compatibility_date = "2025-05-01"
 compatibility_flags = ["nodejs_compat"]
@@ -10,5 +10,5 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 NODE_ENV     = "production"
-FRONTEND_URL = "https://REPLACE_WITH_PAGES_DOMAIN"
+FRONTEND_URL = "https://budget-tracker-aqh.pages.dev"
 OPENAI_MODEL = "gpt-4.1-nano"
