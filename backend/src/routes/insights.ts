@@ -13,7 +13,13 @@ import { monthQuerySchema as querySchema } from '../lib/schemas'
 import { captureException } from '../lib/sentry'
 import { zQuery } from '../lib/validator'
 
-const openai = new OpenAI()
+// Defer construction — OpenAI() throws if OPENAI_API_KEY is missing, and
+// Workers deploy validation loads this module without secrets.
+let _openai: OpenAI | undefined
+function openai(): OpenAI {
+  if (!_openai) _openai = new OpenAI()
+  return _openai
+}
 
 const insightsSchema = z.object({
   insights: z
@@ -63,7 +69,7 @@ const app = new Hono<AppEnv>()
     }
 
     const runCompletion = (model: string) =>
-      openai.chat.completions.parse(
+      openai().chat.completions.parse(
         {
           model,
           messages: [
