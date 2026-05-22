@@ -1,13 +1,20 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { client } from '@/lib/client'
 
-type CreateInput = { name: string; color: string }
+type CreateInput = {
+  name: string
+  color: string
+  icon?: string
+  type?: 'income' | 'expense'
+}
 type UpdateInput = { id: string; patch: Partial<CreateInput> }
 
 type Category = {
   id: string
   name: string
   color: string
+  icon: string
+  type: 'income' | 'expense'
   isDefault: string
 }
 

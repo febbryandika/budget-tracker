@@ -8,13 +8,12 @@ test.describe('Dashboard', () => {
     await page.goto('/dashboard')
 
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
-    await expect(page.getByText('Total income', { exact: true })).toBeVisible()
-    await expect(page.getByText('Total expenses', { exact: true })).toBeVisible()
-    await expect(page.getByText('Net balance', { exact: true })).toBeVisible()
+    await expect(page.getByText('Total Income', { exact: true })).toBeVisible()
+    await expect(page.getByText('Total Expenses', { exact: true })).toBeVisible()
+    await expect(page.getByText('Net Balance', { exact: true })).toBeVisible()
 
     await expect(page.getByText('No data to chart yet')).toBeVisible()
-    await expect(page.getByText('Add your first entry to see monthly insights.')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Get AI insights' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: /Get AI insights/ })).toBeDisabled()
   })
 
   test('reflects totals and renders the chart after entries are added', async ({ page }) => {
@@ -24,12 +23,13 @@ test.describe('Dashboard', () => {
 
     await page.goto('/dashboard')
 
-    await expect(page.getByText('$2,000.00')).toBeVisible()
-    await expect(page.getByText('$500.00')).toBeVisible()
-    await expect(page.getByText('$1,500.00')).toBeVisible()
+    // IDR formatting: Rp 2.000 etc. (dot separator, no decimals)
+    await expect(page.getByText(/Rp\s*2\.000/).first()).toBeVisible()
+    await expect(page.getByText(/Rp\s*500/).first()).toBeVisible()
+    await expect(page.getByText(/Rp\s*1\.500/).first()).toBeVisible()
 
-    await expect(page.getByRole('application')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Get AI insights' })).toBeEnabled()
+    await expect(page.getByRole('application', { name: /trend/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /Get AI insights/ })).toBeEnabled()
   })
 
   test('month picker updates the visible summary', async ({ page }) => {
@@ -38,8 +38,7 @@ test.describe('Dashboard', () => {
 
     await page.goto('/dashboard')
 
-    // MonthPicker is the only <select> on this page; pick an older option.
-    const monthSelect = page.locator('select').first()
+    const monthSelect = page.locator('#month-picker')
     await expect(monthSelect).toBeVisible()
     const optionValues = await monthSelect.locator('option').evaluateAll((nodes) =>
       nodes.map((n) => (n as HTMLOptionElement).value),
@@ -48,6 +47,6 @@ test.describe('Dashboard', () => {
     await monthSelect.selectOption(optionValues[2])
 
     await expect(page.getByText('No data to chart yet')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Get AI insights' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: /Get AI insights/ })).toBeDisabled()
   })
 })

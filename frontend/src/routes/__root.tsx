@@ -1,7 +1,8 @@
-import { createRootRouteWithContext, Link, Outlet, useRouter } from '@tanstack/react-router'
+import { createRootRouteWithContext, Outlet, useRouter, useRouterState } from '@tanstack/react-router'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { ErrorBoundary } from 'react-error-boundary'
 import { Toaster } from 'sonner'
+import { TopNav } from '@/components/app/top-nav'
 import { ErrorFallback } from '@/components/error-fallback'
 import { authClient, useSession } from '@/lib/auth-client'
 import { captureException } from '@/lib/sentry'
@@ -14,82 +15,49 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
 })
 
+const PUBLIC_ROUTES = ['/', '/login', '/register']
+
 function RootLayout() {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { data: session, isPending } = useSession()
+  const { data: session } = useSession()
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
 
   async function handleSignOut() {
     await authClient.signOut()
+    queryClient.clear()
     router.navigate({ to: '/login' })
   }
 
+  // Decide chrome by path, not by session-data. Session may briefly toggle on
+  // refresh, and route guards already ensure /dashboard etc. are auth-only.
+  const isPublic = PUBLIC_ROUTES.includes(pathname)
+  const showShell = !isPublic
+
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="flex items-center gap-4 border-b px-6 py-3">
-        <Link
-          to={session ? '/dashboard' : '/login'}
-          className="font-semibold text-foreground hover:text-primary"
-        >
-          Budget Tracker
-        </Link>
-
-        {session && (
-          <div className="flex items-center gap-3 text-sm">
-            <Link
-              to="/dashboard"
-              activeProps={{ className: 'text-foreground' }}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/entries"
-              activeProps={{ className: 'text-foreground' }}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Entries
-            </Link>
-            <Link
-              to="/categories"
-              activeProps={{ className: 'text-foreground' }}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Categories
-            </Link>
-          </div>
-        )}
-
-        <div className="ml-auto flex items-center gap-4 text-sm">
-          {isPending ? null : session ? (
-            <>
-              <span className="text-muted-foreground">{session.user.email}</span>
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="rounded-md border px-3 py-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                Sign out
-              </button>
-            </>
-          ) : (
-            <Link to="/login" className="text-muted-foreground hover:text-foreground">
-              Sign in
-            </Link>
-          )}
-        </div>
-      </nav>
-      <main className="container mx-auto px-6 py-8">
-        <ErrorBoundary
-          FallbackComponent={ErrorFallback}
-          onReset={() => queryClient.clear()}
-          onError={(err, info) =>
-            captureException(err, { componentStack: info.componentStack })
-          }
-        >
+    <div className={showShell ? 'app-shell' : undefined}>
+      {showShell && (
+        <TopNav
+          userName={session?.user.name ?? ''}
+          userEmail={session?.user.email ?? ''}
+          onSignOut={handleSignOut}
+        />
+      )}
+      <ErrorBoundary
+        FallbackComponent={ErrorFallback}
+        onReset={() => queryClient.clear()}
+        onError={(err, info) =>
+          captureException(err, { componentStack: info.componentStack })
+        }
+      >
+        {showShell ? (
+          <main className="app-container" style={{ paddingTop: 28, paddingBottom: 60, flex: 1 }}>
+            <Outlet />
+          </main>
+        ) : (
           <Outlet />
-        </ErrorBoundary>
-      </main>
+        )}
+      </ErrorBoundary>
       <Toaster richColors position="top-right" />
     </div>
   )

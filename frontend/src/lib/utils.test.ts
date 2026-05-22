@@ -17,15 +17,19 @@ describe('cn', () => {
 })
 
 describe('formatCurrency', () => {
-  it('formats whole numbers with two decimals', () => {
-    expect(formatCurrency(1000)).toMatch(/\$1,000\.00/)
+  it('formats whole numbers in IDR with dot thousand separators', () => {
+    expect(formatCurrency(1_000_000)).toMatch(/Rp\s*1\.000\.000/)
   })
 
-  it('formats negatives', () => {
-    expect(formatCurrency(-42.5)).toMatch(/-\$42\.50|\(\$42\.50\)/)
+  it('uses the absolute value (sign is rendered by callers)', () => {
+    expect(formatCurrency(-42_500)).toMatch(/Rp\s*42\.500/)
   })
 
   it('formats zero', () => {
-    expect(formatCurrency(0)).toMatch(/\$0\.00/)
+    expect(formatCurrency(0)).toMatch(/Rp\s*0/)
+  })
+
+  it('supports a non-default currency', () => {
+    expect(formatCurrency(1234.5, '$')).toMatch(/\$1,234\.50/)
   })
 })

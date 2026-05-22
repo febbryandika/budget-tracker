@@ -58,6 +58,8 @@ export const categories = pgTable('categories', {
   userId:    text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   name:      text('name').notNull(),
   color:     text('color').notNull().default('#6366f1'),
+  icon:      text('icon').notNull().default('tag'),
+  type:      text('type', { enum: ['income', 'expense'] }).notNull().default('expense'),
   isDefault: text('is_default').notNull().default('false'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [

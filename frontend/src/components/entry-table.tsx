@@ -1,7 +1,8 @@
-import { Link } from '@tanstack/react-router'
-import { formatCurrency } from '@/lib/utils'
+import { Edit as EditIcon, Trash, TrendingDown, TrendingUp } from 'lucide-react'
+import { getCategoryIcon } from '@/lib/category-icons'
+import { formatCurrency, formatDate } from '@/lib/format'
 
-type EntryRow = {
+export type EntryRow = {
   id: string
   categoryId: string | null
   type: 'income' | 'expense'
@@ -10,103 +11,100 @@ type EntryRow = {
   note: string | null
 }
 
-type CategoryInfo = { name: string; color: string }
+export type CategoryInfo = { name: string; color: string; icon: string }
 
 type Props = {
   entries: EntryRow[]
   categoryMap: Map<string, CategoryInfo>
+  onEdit: (entry: EntryRow) => void
   onDelete: (id: string) => void
   deletingId?: string | null
 }
 
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-})
+const FALLBACK_CAT: CategoryInfo = { name: 'Uncategorized', color: '#94a3b8', icon: 'more' }
 
-function formatDate(iso: string) {
-  const [y, m, d] = iso.split('-').map(Number)
-  return dateFormatter.format(new Date(Date.UTC(y, m - 1, d)))
-}
-
-export function EntryTable({ entries, categoryMap, onDelete, deletingId }: Props) {
+export function EntryTable({ entries, categoryMap, onEdit, onDelete, deletingId }: Props) {
   return (
-    <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      <table className="tbl">
+        <thead>
           <tr>
-            <th className="px-4 py-2 font-medium">Date</th>
-            <th className="px-4 py-2 font-medium">Type</th>
-            <th className="px-4 py-2 font-medium">Category</th>
-            <th className="px-4 py-2 text-right font-medium">Amount</th>
-            <th className="px-4 py-2 font-medium">Note</th>
-            <th className="px-4 py-2 text-right font-medium">Actions</th>
+            <th style={{ width: 110 }}>Date</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Type</th>
+            <th style={{ textAlign: 'right' }}>Amount</th>
+            <th style={{ width: 110, textAlign: 'right' }}>Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y">
+        <tbody>
           {entries.map((e) => {
-            const cat = e.categoryId ? categoryMap.get(e.categoryId) : null
-            const amountNum = Number(e.amount)
-            const isIncome = e.type === 'income'
-            const toneClass = isIncome
-              ? 'text-emerald-600 dark:text-emerald-400'
-              : 'text-rose-600 dark:text-rose-400'
-            const sign = isIncome ? '+' : '−'
+            const cat = (e.categoryId && categoryMap.get(e.categoryId)) || FALLBACK_CAT
+            const CatIcon = getCategoryIcon(cat.icon)
+            const amount = Number(e.amount)
             return (
-              <tr key={e.id} className="hover:bg-muted/30">
-                <td className="whitespace-nowrap px-4 py-3 text-foreground">{formatDate(e.date)}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={
-                      'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ' +
-                      (isIncome
-                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                        : 'bg-rose-500/10 text-rose-700 dark:text-rose-300')
-                    }
-                  >
-                    {isIncome ? 'Income' : 'Expense'}
+              <tr key={e.id} aria-label={e.note ?? cat.name}>
+                <td style={{ color: 'var(--fg-muted)', fontSize: 13, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                  {formatDate(e.date)}
+                </td>
+                <td style={{ fontWeight: 500 }}>
+                  {e.note ? e.note : <span style={{ color: 'var(--fg-muted)', fontStyle: 'italic' }}>—</span>}
+                </td>
+                <td>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <span
+                      style={{
+                        width: 22, height: 22, borderRadius: 6,
+                        background: cat.color + '22', color: cat.color,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      <CatIcon size={12} color={cat.color} />
+                    </span>
+                    <span style={{ fontSize: 13 }}>{cat.name}</span>
                   </span>
                 </td>
-                <td className="px-4 py-3">
-                  {cat ? (
-                    <span className="inline-flex items-center gap-2">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: cat.color }}
-                        aria-hidden
-                      />
-                      <span>{cat.name}</span>
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
+                <td>
+                  <span className={`badge ${e.type === 'income' ? 'badge-income' : 'badge-expense'}`}>
+                    {e.type === 'income' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                    {e.type === 'income' ? 'Income' : 'Expense'}
+                  </span>
                 </td>
-                <td className={`whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums ${toneClass}`}>
-                  {sign}
-                  {formatCurrency(amountNum)}
+                <td
+                  style={{
+                    textAlign: 'right',
+                    fontWeight: 600,
+                    color: e.type === 'income' ? 'var(--income-fg)' : 'var(--fg)',
+                    fontVariantNumeric: 'tabular-nums',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {e.type === 'income' ? '+' : '−'}
+                  {formatCurrency(amount)}
                 </td>
-                <td className="max-w-xs px-4 py-3 text-muted-foreground">
-                  <span className="line-clamp-1">{e.note ?? ''}</span>
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
-                  <Link
-                    to="/entries/$id/edit"
-                    params={{ id: e.id }}
-                    className="text-primary hover:underline"
-                  >
-                    Edit
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm('Delete this entry?')) onDelete(e.id)
-                    }}
-                    disabled={deletingId === e.id}
-                    className="ml-3 text-destructive hover:underline disabled:opacity-50"
-                  >
-                    {deletingId === e.id ? 'Deleting…' : 'Delete'}
-                  </button>
+                <td style={{ textAlign: 'right' }}>
+                  <div style={{ display: 'inline-flex', gap: 4 }}>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-icon"
+                      onClick={() => onEdit(e)}
+                      title="Edit"
+                      aria-label="Edit"
+                    >
+                      <EditIcon size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-icon"
+                      onClick={() => onDelete(e.id)}
+                      disabled={deletingId === e.id}
+                      title="Delete"
+                      aria-label="Delete"
+                      style={{ color: 'var(--destructive)' }}
+                    >
+                      <Trash size={14} color="var(--destructive)" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             )

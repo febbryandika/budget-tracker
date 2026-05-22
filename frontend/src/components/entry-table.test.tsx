@@ -1,136 +1,73 @@
-import type { ReactNode } from 'react'
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { EntryTable, type CategoryInfo, type EntryRow } from './entry-table'
 
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({
-    children,
-    to,
-    params,
-    ...rest
-  }: {
-    children: ReactNode
-    to: string
-    params?: Record<string, string>
-    [key: string]: unknown
-  }) => {
-    const href = params
-      ? Object.entries(params).reduce((acc, [k, v]) => acc.replace(`$${k}`, v), to)
-      : to
-    return (
-      <a href={href} data-to={to} {...rest}>
-        {children}
-      </a>
-    )
-  },
-}))
-
-import { EntryTable } from './entry-table'
-
-const categoryMap = new Map([
-  ['cat-food', { name: 'Food', color: '#ff0000' }],
-  ['cat-salary', { name: 'Salary', color: '#00ff00' }],
+const categoryMap = new Map<string, CategoryInfo>([
+  ['cat-food', { name: 'Food', color: '#f97316', icon: 'utensils' }],
 ])
 
-const entries = [
-  {
-    id: 'e1',
-    categoryId: 'cat-food',
-    type: 'expense' as const,
-    amount: '12.50',
-    date: '2026-05-15',
-    note: 'Lunch',
-  },
-  {
-    id: 'e2',
-    categoryId: 'cat-salary',
-    type: 'income' as const,
-    amount: '1000.00',
-    date: '2026-05-01',
-    note: null,
-  },
-  {
-    id: 'e3',
-    categoryId: null,
-    type: 'expense' as const,
-    amount: '5.00',
-    date: '2026-05-10',
-    note: 'Misc',
-  },
+const entries: EntryRow[] = [
+  { id: 'e1', categoryId: 'cat-food', type: 'expense', amount: '12500', date: '2026-05-12', note: 'Lunch' },
+  { id: 'e2', categoryId: null, type: 'income', amount: '1500000', date: '2026-05-01', note: null },
 ]
 
 describe('EntryTable', () => {
-  beforeEach(() => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
-  })
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  it('renders one row per entry with formatted amount, type label, and category name', () => {
-    render(<EntryTable entries={entries} categoryMap={categoryMap} onDelete={() => {}} />)
-    const rows = screen.getAllByRole('row')
-    // 1 header row + 3 data rows
-    expect(rows).toHaveLength(4)
-
-    const lunchRow = screen.getByText('Lunch').closest('tr')!
-    expect(within(lunchRow).getByText('Expense')).toBeInTheDocument()
-    expect(within(lunchRow).getByText('Food')).toBeInTheDocument()
-    expect(within(lunchRow).getByText(/−\$12\.50/)).toBeInTheDocument()
-
-    const salaryRow = screen.getByText('Salary').closest('tr')!
-    expect(within(salaryRow).getByText('Income')).toBeInTheDocument()
-    expect(within(salaryRow).getByText(/\+\$1,000\.00/)).toBeInTheDocument()
-  })
-
-  it('renders "—" when the entry has no category', () => {
-    render(<EntryTable entries={entries} categoryMap={categoryMap} onDelete={() => {}} />)
-    const miscRow = screen.getByText('Misc').closest('tr')!
-    expect(within(miscRow).getByText('—')).toBeInTheDocument()
-  })
-
-  it('calls onDelete when the user confirms', async () => {
-    const user = userEvent.setup()
-    const onDelete = vi.fn()
-    render(<EntryTable entries={entries} categoryMap={categoryMap} onDelete={onDelete} />)
-    const lunchRow = screen.getByText('Lunch').closest('tr')!
-    await user.click(within(lunchRow).getByRole('button', { name: 'Delete' }))
-    expect(onDelete).toHaveBeenCalledWith('e1')
-  })
-
-  it('does not call onDelete when the user cancels the confirm prompt', async () => {
-    const user = userEvent.setup()
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
-    const onDelete = vi.fn()
-    render(<EntryTable entries={entries} categoryMap={categoryMap} onDelete={onDelete} />)
-    const lunchRow = screen.getByText('Lunch').closest('tr')!
-    await user.click(within(lunchRow).getByRole('button', { name: 'Delete' }))
-    expect(onDelete).not.toHaveBeenCalled()
-  })
-
-  it('disables the matching Delete button and shows "Deleting…" when deletingId matches', () => {
+  it('renders rows with formatted amounts (IDR by default)', () => {
     render(
       <EntryTable
         entries={entries}
         categoryMap={categoryMap}
+        onEdit={() => {}}
         onDelete={() => {}}
-        deletingId="e1"
       />,
     )
-    const lunchRow = screen.getByText('Lunch').closest('tr')!
-    const deletingBtn = within(lunchRow).getByRole('button', { name: 'Deleting…' })
-    expect(deletingBtn).toBeDisabled()
-
-    const salaryRow = screen.getByText('Salary').closest('tr')!
-    expect(within(salaryRow).getByRole('button', { name: 'Delete' })).not.toBeDisabled()
+    expect(screen.getByText('Lunch')).toBeInTheDocument()
+    expect(screen.getByText(/−Rp\s*12\.500/)).toBeInTheDocument()
+    expect(screen.getByText(/\+Rp\s*1\.500\.000/)).toBeInTheDocument()
   })
 
-  it('renders the Edit link with the correct id in its target', () => {
-    render(<EntryTable entries={entries} categoryMap={categoryMap} onDelete={() => {}} />)
-    const lunchRow = screen.getByText('Lunch').closest('tr')!
-    const editLink = within(lunchRow).getByRole('link', { name: 'Edit' })
-    expect(editLink.getAttribute('href')).toContain('e1')
-    expect(editLink.getAttribute('data-to')).toBe('/entries/$id/edit')
+  it('shows Uncategorized for entries without a category', () => {
+    render(
+      <EntryTable
+        entries={entries}
+        categoryMap={categoryMap}
+        onEdit={() => {}}
+        onDelete={() => {}}
+      />,
+    )
+    expect(screen.getByText('Uncategorized')).toBeInTheDocument()
+  })
+
+  it('calls onEdit when the Edit action is clicked', async () => {
+    const user = userEvent.setup()
+    const onEdit = vi.fn()
+    render(
+      <EntryTable
+        entries={entries}
+        categoryMap={categoryMap}
+        onEdit={onEdit}
+        onDelete={() => {}}
+      />,
+    )
+    const editButtons = screen.getAllByRole('button', { name: 'Edit' })
+    await user.click(editButtons[0])
+    expect(onEdit).toHaveBeenCalledWith(entries[0])
+  })
+
+  it('calls onDelete when the Delete action is clicked', async () => {
+    const user = userEvent.setup()
+    const onDelete = vi.fn()
+    render(
+      <EntryTable
+        entries={entries}
+        categoryMap={categoryMap}
+        onEdit={() => {}}
+        onDelete={onDelete}
+      />,
+    )
+    const delButtons = screen.getAllByRole('button', { name: 'Delete' })
+    await user.click(delButtons[0])
+    expect(onDelete).toHaveBeenCalledWith('e1')
   })
 })

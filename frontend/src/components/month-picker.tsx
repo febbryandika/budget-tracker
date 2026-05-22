@@ -1,12 +1,10 @@
+import { Calendar, ChevronDown } from 'lucide-react'
+import { formatMonthLong } from '@/lib/format'
+
 type Props = {
   value: string
   onChange: (month: string) => void
 }
-
-const labelFormatter = new Intl.DateTimeFormat(undefined, {
-  month: 'long',
-  year: 'numeric',
-})
 
 function buildOptions(value: string): { value: string; label: string }[] {
   const today = new Date()
@@ -15,12 +13,10 @@ function buildOptions(value: string): { value: string; label: string }[] {
   for (let i = 0; i < 12; i++) {
     const d = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() - i, 1))
     const v = d.toISOString().slice(0, 7)
-    opts.push({ value: v, label: labelFormatter.format(d) })
+    opts.push({ value: v, label: formatMonthLong(v) })
   }
   if (!opts.some((o) => o.value === value)) {
-    const [y, m] = value.split('-').map(Number)
-    const d = new Date(Date.UTC(y, m - 1, 1))
-    opts.unshift({ value, label: labelFormatter.format(d) })
+    opts.unshift({ value, label: formatMonthLong(value) })
   }
   return opts
 }
@@ -28,19 +24,27 @@ function buildOptions(value: string): { value: string; label: string }[] {
 export function MonthPicker({ value, onChange }: Props) {
   const options = buildOptions(value)
   return (
-    <label className="flex items-center gap-2 text-sm">
-      <span className="text-muted-foreground">Month</span>
+    <div style={{ position: 'relative' }}>
+      <label htmlFor="month-picker" style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>
+        Month
+      </label>
       <select
+        id="month-picker"
+        className="select"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        style={{ paddingLeft: 36, paddingRight: 32, height: 40, width: 180, appearance: 'none', cursor: 'pointer' }}
       >
         {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
+          <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
-    </label>
+      <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--fg-muted)' }}>
+        <Calendar size={15} />
+      </div>
+      <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--fg-muted)' }}>
+        <ChevronDown size={14} />
+      </div>
+    </div>
   )
 }

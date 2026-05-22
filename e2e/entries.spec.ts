@@ -10,33 +10,35 @@ test.describe('Entries CRUD', () => {
   test('create an expense and see it on the list', async ({ page }) => {
     await createEntry(page, {
       type: 'expense',
-      amount: 42.5,
+      amount: 42500,
       category: 'Food',
       note: 'Groceries',
     })
 
     const row = page.getByRole('row', { name: /Groceries/ })
     await expect(row).toBeVisible()
-    await expect(row.getByText(/Food/)).toBeVisible()
-    await expect(row.getByText(/Expense/)).toBeVisible()
-    await expect(row.getByText('−$42.50')).toBeVisible()
+    await expect(row.getByText('Food')).toBeVisible()
+    await expect(row.getByText('Expense')).toBeVisible()
+    await expect(row.getByText(/−Rp\s*42\.500/)).toBeVisible()
   })
 
   test('create an income then edit its amount', async ({ page }) => {
-    await createEntry(page, { type: 'income', amount: 1000, category: 'Salary', note: 'Paycheck' })
+    await createEntry(page, { type: 'income', amount: 1000000, category: 'Salary', note: 'Paycheck' })
 
-    await page.getByRole('row', { name: /Paycheck/ }).getByRole('link', { name: 'Edit' }).click()
-    await expect(page.getByRole('heading', { name: 'Edit entry' })).toBeVisible()
+    const row = page.getByRole('row', { name: /Paycheck/ })
+    await row.getByRole('button', { name: 'Edit' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Edit entry' })
+    await expect(dialog).toBeVisible()
 
-    await page.getByLabel('Amount').fill('1500')
-    await page.getByRole('button', { name: 'Save changes' }).click()
+    await dialog.getByLabel('Amount').fill('1500000')
+    await dialog.getByRole('button', { name: /Save changes/ }).click()
 
-    await expect(page).toHaveURL(/\/entries$/)
-    await expect(page.getByRole('row', { name: /Paycheck/ }).getByText('+$1,500.00')).toBeVisible()
+    await expect(dialog).toBeHidden()
+    await expect(row.getByText(/\+Rp\s*1\.500\.000/)).toBeVisible()
   })
 
   test('delete an entry through the confirm dialog', async ({ page }) => {
-    await createEntry(page, { type: 'expense', amount: 9.99, note: 'Coffee' })
+    await createEntry(page, { type: 'expense', amount: 9999, note: 'Coffee' })
 
     page.once('dialog', (dialog) => dialog.accept())
     await page.getByRole('row', { name: /Coffee/ }).getByRole('button', { name: 'Delete' }).click()
@@ -46,15 +48,16 @@ test.describe('Entries CRUD', () => {
   })
 
   test('filter entries by category', async ({ page }) => {
-    await createEntry(page, { type: 'expense', amount: 10, category: 'Food', note: 'Lunch' })
-    await createEntry(page, { type: 'expense', amount: 20, category: 'Transport', note: 'Bus' })
+    await createEntry(page, { type: 'expense', amount: 10000, category: 'Food', note: 'Lunch' })
+    await createEntry(page, { type: 'expense', amount: 20000, category: 'Transport', note: 'Bus' })
 
-    await page.getByLabel('Category').selectOption({ label: 'Food' })
+    // Click the Food category chip filter.
+    await page.getByRole('button', { name: 'Food', exact: true }).first().click()
 
     await expect(page.getByRole('row', { name: /Lunch/ })).toBeVisible()
     await expect(page.getByRole('row', { name: /Bus/ })).toHaveCount(0)
 
-    await page.getByLabel('Category').selectOption({ label: 'All categories' })
+    await page.getByRole('button', { name: 'All categories' }).click()
     await expect(page.getByRole('row', { name: /Bus/ })).toBeVisible()
   })
 })

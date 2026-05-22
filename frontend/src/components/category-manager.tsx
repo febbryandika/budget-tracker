@@ -1,5 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type ComponentType } from 'react'
 import { toast } from 'sonner'
+import { Edit as EditIcon, Plus, Trash, TrendingDown, TrendingUp, type LucideProps } from 'lucide-react'
+import { CategoryEditor, type CategoryDraft } from '@/components/categories/category-editor'
+import { getCategoryIcon } from '@/lib/category-icons'
 import {
   CategoryInUseError,
   useCreateCategory,
@@ -7,226 +10,263 @@ import {
   useUpdateCategory,
 } from '@/hooks/use-category-mutations'
 
-type Category = {
+export type CategoryRow = {
   id: string
   name: string
   color: string
+  icon?: string
+  type?: 'income' | 'expense'
   isDefault: string
 }
 
+type EntryRef = { categoryId: string | null }
+
 type Props = {
-  categories: Category[]
+  categories: CategoryRow[]
+  entries: EntryRef[]
 }
 
-const DEFAULT_NEW_COLOR = '#6366f1'
+const DEFAULT_DRAFT: CategoryDraft = {
+  name: '',
+  color: '#6366f1',
+  icon: 'tag',
+  type: 'expense',
+}
 
-const inputClass =
-  'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring'
-
-const colorInputClass =
-  'h-9 w-12 cursor-pointer rounded-md border border-input bg-background p-0.5 focus:outline-none focus:ring-2 focus:ring-ring'
-
-export function CategoryManager({ categories }: Props) {
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editName, setEditName] = useState('')
-  const [editColor, setEditColor] = useState(DEFAULT_NEW_COLOR)
-  const [editError, setEditError] = useState<string | null>(null)
-
-  const [newName, setNewName] = useState('')
-  const [newColor, setNewColor] = useState(DEFAULT_NEW_COLOR)
-
-  const [deleteError, setDeleteError] = useState<{ id: string; message: string } | null>(null)
+export function CategoryManager({ categories, entries }: Props) {
+  const [draft, setDraft] = useState<CategoryDraft | null>(null)
+  const [editingId, setEditingId] = useState<string | 'new' | null>(null)
 
   const createMutation = useCreateCategory()
   const updateMutation = useUpdateCategory()
   const deleteMutation = useDeleteCategory()
 
-  function startEdit(c: Category) {
+  const usageMap = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const e of entries) {
+      if (!e.categoryId) continue
+      m.set(e.categoryId, (m.get(e.categoryId) ?? 0) + 1)
+    }
+    return m
+  }, [entries])
+
+  const expenseCats = categories.filter((c) => (c.type ?? 'expense') === 'expense')
+  const incomeCats = categories.filter((c) => c.type === 'income')
+
+  function openNew() {
+    setDraft({ ...DEFAULT_DRAFT })
+    setEditingId('new')
+  }
+
+  function openEdit(c: CategoryRow) {
+    setDraft({
+      id: c.id,
+      name: c.name,
+      color: c.color,
+      icon: c.icon ?? 'tag',
+      type: c.type ?? 'expense',
+    })
     setEditingId(c.id)
-    setEditName(c.name)
-    setEditColor(c.color)
-    setEditError(null)
-    setDeleteError(null)
   }
 
-  function cancelEdit() {
+  function closeEditor() {
+    setDraft(null)
     setEditingId(null)
-    setEditError(null)
   }
 
-  async function handleCreate(e: FormEvent) {
-    e.preventDefault()
-    const name = newName.trim()
-    if (name === '') return
+  async function handleSave() {
+    if (!draft) return
     try {
-      await createMutation.mutateAsync({ name, color: newColor })
-      setNewName('')
-      toast.success('Category added')
+      if (editingId === 'new') {
+        await createMutation.mutateAsync({
+          name: draft.name.trim(),
+          color: draft.color,
+          icon: draft.icon,
+          type: draft.type,
+        })
+        toast.success('Category added')
+      } else if (draft.id) {
+        await updateMutation.mutateAsync({
+          id: draft.id,
+          patch: {
+            name: draft.name.trim(),
+            color: draft.color,
+            icon: draft.icon,
+            type: draft.type,
+          },
+        })
+        toast.success('Category updated')
+      }
+      closeEditor()
     } catch {
-      toast.error('Failed to create category. Please try again.')
+      toast.error(editingId === 'new' ? 'Failed to create category.' : 'Failed to save changes.')
     }
   }
 
-  async function handleSave(id: string) {
-    setEditError(null)
-    const name = editName.trim()
-    if (name === '') {
-      setEditError('Name is required')
-      return
-    }
+  async function handleDelete(c: CategoryRow) {
+    if (!window.confirm(`Delete the category "${c.name}"?`)) return
     try {
-      await updateMutation.mutateAsync({ id, patch: { name, color: editColor } })
-      setEditingId(null)
-      toast.success('Category updated')
-    } catch {
-      toast.error('Failed to save changes. Please try again.')
-    }
-  }
-
-  async function handleDelete(id: string) {
-    if (!window.confirm('Delete this category?')) return
-    setDeleteError(null)
-    try {
-      await deleteMutation.mutateAsync({ id })
+      await deleteMutation.mutateAsync({ id: c.id })
       toast.success('Category deleted')
     } catch (err) {
       if (err instanceof CategoryInUseError) {
-        setDeleteError({ id, message: err.message })
+        toast.error(err.message)
       } else {
         toast.error('Failed to delete category. Please try again.')
       }
     }
   }
 
-  const deletingId = deleteMutation.isPending ? deleteMutation.variables?.id ?? null : null
+  const submitting = createMutation.isPending || updateMutation.isPending
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
-      <form
-        onSubmit={handleCreate}
-        className="flex flex-wrap items-end gap-3 border-b bg-muted/30 p-4"
-      >
-        <div className="space-y-1">
-          <label htmlFor="new-category-color" className="text-xs font-medium text-muted-foreground">
-            Color
-          </label>
-          <input
-            id="new-category-color"
-            type="color"
-            value={newColor}
-            onChange={(e) => setNewColor(e.target.value)}
-            className={colorInputClass}
-            aria-label="New category color"
-          />
-        </div>
-        <div className="flex-1 space-y-1">
-          <label htmlFor="new-category-name" className="text-xs font-medium text-muted-foreground">
-            New category
-          </label>
-          <input
-            id="new-category-name"
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            required
-            maxLength={100}
-            placeholder="e.g. Travel"
-            className={inputClass}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={createMutation.isPending}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-        >
-          {createMutation.isPending ? 'Adding…' : 'Add'}
-        </button>
-      </form>
+    <>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <h1 className="t-display" style={{ fontSize: 28, marginBottom: 4 }}>Categories</h1>
+            <p style={{ color: 'var(--fg-muted)', fontSize: 13.5 }}>
+              {categories.length} categories · {categories.filter((c) => c.isDefault === 'true').length} are defaults
+            </p>
+          </div>
+          <button type="button" className="btn btn-primary" onClick={openNew}>
+            <Plus size={15} /> New category
+          </button>
+        </header>
 
-      <ul role="list" className="divide-y">
-        {categories.map((c) => {
-          const isEditing = editingId === c.id
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16 }}>
+          <CategoryGroup
+            title="Expense categories"
+            Icon={TrendingDown}
+            tone="expense"
+            cats={expenseCats}
+            usageMap={usageMap}
+            onEdit={openEdit}
+            onDelete={handleDelete}
+          />
+          <CategoryGroup
+            title="Income categories"
+            Icon={TrendingUp}
+            tone="income"
+            cats={incomeCats}
+            usageMap={usageMap}
+            onEdit={openEdit}
+            onDelete={handleDelete}
+          />
+        </div>
+      </div>
+
+      {draft && editingId !== null && (
+        <CategoryEditor
+          draft={draft}
+          isNew={editingId === 'new'}
+          submitting={submitting}
+          onChange={setDraft}
+          onCancel={closeEditor}
+          onSave={handleSave}
+        />
+      )}
+    </>
+  )
+}
+
+function CategoryGroup({
+  title,
+  Icon,
+  tone,
+  cats,
+  usageMap,
+  onEdit,
+  onDelete,
+}: {
+  title: string
+  Icon: ComponentType<LucideProps>
+  tone: 'income' | 'expense'
+  cats: CategoryRow[]
+  usageMap: Map<string, number>
+  onEdit: (c: CategoryRow) => void
+  onDelete: (c: CategoryRow) => void
+}) {
+  return (
+    <div className="card" style={{ padding: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <span
+          style={{
+            width: 28, height: 28, borderRadius: 8,
+            background: tone === 'income' ? 'var(--income-bg)' : 'var(--expense-bg)',
+            color: tone === 'income' ? 'var(--income-fg)' : 'var(--expense-fg)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Icon size={14} />
+        </span>
+        <h3 style={{ fontSize: 14, fontWeight: 700 }}>{title}</h3>
+        <span className="badge" style={{ marginLeft: 'auto' }}>{cats.length}</span>
+      </div>
+      <ul role="list" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 0, listStyle: 'none' }}>
+        {cats.length === 0 && (
+          <li
+            style={{
+              fontSize: 13, color: 'var(--fg-muted)', padding: 12, textAlign: 'center',
+              border: '1px dashed var(--border)', borderRadius: 'var(--radius)',
+            }}
+          >
+            No categories yet.
+          </li>
+        )}
+        {cats.map((c) => {
+          const usage = usageMap.get(c.id) ?? 0
           const isDefault = c.isDefault === 'true'
-          const rowDeleteError = deleteError?.id === c.id ? deleteError.message : null
+          const CatIcon = getCategoryIcon(c.icon)
           return (
-            <li key={c.id} className="px-4 py-3">
-              {isEditing ? (
-                <div className="flex flex-wrap items-center gap-3">
-                  <input
-                    type="color"
-                    value={editColor}
-                    onChange={(e) => setEditColor(e.target.value)}
-                    className={colorInputClass}
-                    aria-label="Category color"
-                  />
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    maxLength={100}
-                    required
-                    className={`${inputClass} flex-1`}
-                    aria-label="Category name"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleSave(c.id)}
-                    disabled={updateMutation.isPending}
-                    className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    {updateMutation.isPending ? 'Saving…' : 'Save'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cancelEdit}
-                    disabled={updateMutation.isPending}
-                    className="rounded-md border px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  {editError && (
-                    <p role="alert" className="basis-full text-sm text-destructive">
-                      {editError}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center gap-3">
-                  <span
-                    className="h-3.5 w-3.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: c.color }}
-                    aria-hidden
-                  />
-                  <span className="font-medium text-foreground">{c.name}</span>
+            <li
+              key={c.id}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '10px 12px',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+              }}
+            >
+              <span
+                style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: c.color + '22', color: c.color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}
+              >
+                <CatIcon size={16} color={c.color} />
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 600, fontSize: 14 }}>{c.name}</span>
                   {isDefault && (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                      Default
-                    </span>
-                  )}
-                  <div className="ml-auto flex items-center gap-3 text-sm">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(c)}
-                      className="text-primary hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(c.id)}
-                      disabled={deletingId === c.id}
-                      className="text-destructive hover:underline disabled:opacity-50"
-                    >
-                      {deletingId === c.id ? 'Deleting…' : 'Delete'}
-                    </button>
-                  </div>
-                  {rowDeleteError && (
-                    <p role="alert" className="basis-full text-sm text-destructive">
-                      {rowDeleteError}
-                    </p>
+                    <span className="badge" style={{ fontSize: 10, padding: '1px 6px' }}>Default</span>
                   )}
                 </div>
-              )}
+                <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
+                  {usage} {usage === 1 ? 'entry' : 'entries'} use this
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-ghost btn-icon"
+                onClick={() => onEdit(c)}
+                aria-label="Edit"
+                title="Edit"
+              >
+                <EditIcon size={14} />
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-icon"
+                onClick={() => onDelete(c)}
+                aria-label="Delete"
+                title="Delete"
+                style={{ color: 'var(--destructive)' }}
+              >
+                <Trash size={14} color="var(--destructive)" />
+              </button>
             </li>
           )
         })}

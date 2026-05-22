@@ -20,6 +20,8 @@ export const entryListSchema = z.object({
 export const categoryCreateSchema = z.object({
   name:  z.string().trim().min(1).max(100),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  icon:  z.string().trim().min(1).max(40).optional(),
+  type:  z.enum(['income', 'expense']).optional(),
 })
 
 export const categoryUpdateSchema = categoryCreateSchema.partial()

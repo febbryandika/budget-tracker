@@ -8,13 +8,13 @@ import { categoryCreateSchema as createSchema, categoryUpdateSchema as updateSch
 import { zJson } from '../lib/validator'
 
 const DEFAULT_CATEGORIES = [
-  { name: 'Food',          color: '#ef4444' },
-  { name: 'Transport',     color: '#3b82f6' },
-  { name: 'Utilities',     color: '#eab308' },
-  { name: 'Salary',        color: '#22c55e' },
-  { name: 'Entertainment', color: '#a855f7' },
-  { name: 'Other',         color: '#6b7280' },
-] as const
+  { name: 'Food',          color: '#f97316', icon: 'utensils',    type: 'expense' as const },
+  { name: 'Transport',     color: '#0ea5e9', icon: 'car',         type: 'expense' as const },
+  { name: 'Utilities',     color: '#a855f7', icon: 'bolt',        type: 'expense' as const },
+  { name: 'Salary',        color: '#10b981', icon: 'briefcase',   type: 'income' as const },
+  { name: 'Entertainment', color: '#ec4899', icon: 'film',        type: 'expense' as const },
+  { name: 'Other',         color: '#6b7280', icon: 'more',        type: 'expense' as const },
+]
 
 const app = new Hono<AppEnv>()
   .get('/', async (c) => {

@@ -15,8 +15,6 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EntriesIndexRouteImport } from './routes/entries/index'
-import { Route as EntriesNewRouteImport } from './routes/entries/new'
-import { Route as EntriesIdEditRouteImport } from './routes/entries/$id.edit'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -48,16 +46,6 @@ const EntriesIndexRoute = EntriesIndexRouteImport.update({
   path: '/entries/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EntriesNewRoute = EntriesNewRouteImport.update({
-  id: '/entries/new',
-  path: '/entries/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EntriesIdEditRoute = EntriesIdEditRouteImport.update({
-  id: '/entries/$id/edit',
-  path: '/entries/$id/edit',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -65,9 +53,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/entries/new': typeof EntriesNewRoute
   '/entries/': typeof EntriesIndexRoute
-  '/entries/$id/edit': typeof EntriesIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,9 +61,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/entries/new': typeof EntriesNewRoute
   '/entries': typeof EntriesIndexRoute
-  '/entries/$id/edit': typeof EntriesIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,9 +70,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/entries/new': typeof EntriesNewRoute
   '/entries/': typeof EntriesIndexRoute
-  '/entries/$id/edit': typeof EntriesIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,19 +80,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/register'
-    | '/entries/new'
     | '/entries/'
-    | '/entries/$id/edit'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/categories'
-    | '/dashboard'
-    | '/login'
-    | '/register'
-    | '/entries/new'
-    | '/entries'
-    | '/entries/$id/edit'
+  to: '/' | '/categories' | '/dashboard' | '/login' | '/register' | '/entries'
   id:
     | '__root__'
     | '/'
@@ -118,9 +90,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/register'
-    | '/entries/new'
     | '/entries/'
-    | '/entries/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -129,9 +99,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
-  EntriesNewRoute: typeof EntriesNewRoute
   EntriesIndexRoute: typeof EntriesIndexRoute
-  EntriesIdEditRoute: typeof EntriesIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -178,20 +146,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EntriesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/entries/new': {
-      id: '/entries/new'
-      path: '/entries/new'
-      fullPath: '/entries/new'
-      preLoaderRoute: typeof EntriesNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/entries/$id/edit': {
-      id: '/entries/$id/edit'
-      path: '/entries/$id/edit'
-      fullPath: '/entries/$id/edit'
-      preLoaderRoute: typeof EntriesIdEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -201,9 +155,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
-  EntriesNewRoute: EntriesNewRoute,
   EntriesIndexRoute: EntriesIndexRoute,
-  EntriesIdEditRoute: EntriesIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
