@@ -101,6 +101,18 @@ function buildAuth(): MiddlewareHandler {
   })
 }
 
-export const aiMinuteLimit = buildAiMinute()
-export const aiDayLimit = buildAiDay()
-export const authLimit = buildAuth()
+// Defer construction until first request. Workers disallow async I/O / timers
+// in global scope, and hono-rate-limiter's in-memory store touches them on init.
+function lazy<E extends Record<string, unknown>>(
+  factory: () => MiddlewareHandler<E>,
+): MiddlewareHandler<E> {
+  let mw: MiddlewareHandler<E> | undefined
+  return (c, next) => {
+    if (!mw) mw = factory()
+    return mw(c, next)
+  }
+}
+
+export const aiMinuteLimit = lazy<AppEnv>(buildAiMinute)
+export const aiDayLimit = lazy<AppEnv>(buildAiDay)
+export const authLimit = lazy(buildAuth)
