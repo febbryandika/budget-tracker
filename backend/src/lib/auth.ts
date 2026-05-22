@@ -24,7 +24,10 @@ export const auth = betterAuth({
     defaultCookieAttributes: {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax',
+      // Pages (*.pages.dev) and Worker (*.workers.dev) are different sites,
+      // so the auth cookie must be SameSite=None to be sent cross-site.
+      // Requires Secure, which isProduction already provides.
+      sameSite: isProduction ? 'none' : 'lax',
     },
   },
 })
